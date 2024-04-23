@@ -47,14 +47,6 @@ df_sessions = df_sessions.drop_duplicates()
 # print(df_sessions.isna().sum())
 # print(df_sessions.describe())
 
-# Let's get some aggregate statistics about the sessions
-# df_sessions_total_seconds = df_sessions.groupby(['user_id'])['secs_elapsed'].agg(['count', 'sum'])
-# df_sessions_total_seconds['avg_time_per_session'] = df_sessions_total_seconds['sum'] / df_sessions_total_seconds['count']
-# print(df_sessions_total_seconds.dtypes)
-# print(df_sessions_total_seconds.describe())
-# df_sts_numeric_cols = df_sessions_total_seconds.select_dtypes(include=[np.number]).columns
-# print(df_sessions_total_seconds[df_sts_numeric_cols].apply(zscore))
-
 # Let's inspect the test data for inconsistencies
 # print(df_train['age'].value_counts()) # stuff is fucked up here
 # print(df_train['country_destination'].value_counts())
@@ -135,3 +127,44 @@ df_age_gender_joined = df_age_gender_joined.drop(columns=['key_x', 'join_key', '
 df_age_gender_joined['male_pop_diff'] = df_age_gender_joined['population_in_thousands_y'] - df_age_gender_joined['population_in_thousands_x']
 df_age_gender_joined['more_male'] = np.where(df_age_gender_joined['male_pop_diff'] > 0, 1, 0)
 df_age_gender_joined.to_csv('age_gender_joined.csv')
+
+# when summer in that hemisphere starts
+def summer_start(x):
+    if x < 0:
+        return 12
+    return 6
+
+# when summer in that hemisphere ends
+# month 2 = february for southern hemisphere
+def summer_end(x):
+    if x < 0:
+        return 2
+    return 8
+
+# Let's do countries a bit
+df_countries['summer_start'] = df_countries['lat_destination'].apply(summer_start)
+df_countries['summer_end'] = df_countries['lat_destination'].apply(summer_end)
+df_countries.to_csv('countries_new.csv')
+
+# Let's get some aggregate statistics about the sessions
+# df_sessions_total_seconds = df_sessions.groupby(['user_id'])['secs_elapsed'].agg(['count', 'sum'])
+# df_sessions_total_seconds['avg_time_per_session'] = df_sessions_total_seconds['sum'] / df_sessions_total_seconds['count']
+# print(df_sessions_total_seconds.dtypes)
+# print(df_sessions_total_seconds.describe())
+# df_sts_numeric_cols = df_sessions_total_seconds.select_dtypes(include=[np.number]).columns
+# print(df_sessions_total_seconds[df_sts_numeric_cols].apply(zscore))
+
+# returns the number of unique devices used for a specific user id
+# perhaps the number of different devices will correspond?
+# more devices -> more wealth -> more likely to vacation
+from functools import reduce
+def all_devices_per_id(series):
+    return len(reduce(lambda x, y: x if y in x else x + '; ' + y, series).split(';'))
+
+def reduce_actions(series):
+    return reduce(lambda x, y: x + '; ' + y, series)
+
+df_sessions_no_nulls_action = df_sessions.dropna(subset=['action', 'action_type'])
+df_unique_devices = df_sessions.groupby('user_id').agg({'device_type': all_devices_per_id}).reset_index()
+df_actions = df_sessions_no_nulls_action.groupby('user_id').agg({'action': reduce_actions})
+df_action_types = df_sessions_no_nulls_action.groupby('user_id').agg({'action_type': reduce_actions})
