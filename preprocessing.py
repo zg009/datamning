@@ -146,14 +146,6 @@ df_countries['summer_start'] = df_countries['lat_destination'].apply(summer_star
 df_countries['summer_end'] = df_countries['lat_destination'].apply(summer_end)
 df_countries.to_csv('countries_new.csv')
 
-# Let's get some aggregate statistics about the sessions
-# df_sessions_total_seconds = df_sessions.groupby(['user_id'])['secs_elapsed'].agg(['count', 'sum'])
-# df_sessions_total_seconds['avg_time_per_session'] = df_sessions_total_seconds['sum'] / df_sessions_total_seconds['count']
-# print(df_sessions_total_seconds.dtypes)
-# print(df_sessions_total_seconds.describe())
-# df_sts_numeric_cols = df_sessions_total_seconds.select_dtypes(include=[np.number]).columns
-# print(df_sessions_total_seconds[df_sts_numeric_cols].apply(zscore))
-
 # returns the number of unique devices used for a specific user id
 # perhaps the number of different devices will correspond?
 # more devices -> more wealth -> more likely to vacation
@@ -164,7 +156,16 @@ def all_devices_per_id(series):
 def reduce_actions(series):
     return reduce(lambda x, y: x + '; ' + y, series)
 
+# Let's get some aggregate statistics about the sessions
+df_sessions_total_seconds = df_sessions.groupby(['user_id'])['secs_elapsed'].agg(['count', 'sum'])
+df_sessions_total_seconds['avg_time_per_session'] = df_sessions_total_seconds['sum'] / df_sessions_total_seconds['count']
+# print(df_sessions_total_seconds.dtypes)
+# print(df_sessions_total_seconds.describe())
+df_sts_numeric_cols = df_sessions_total_seconds.select_dtypes(include=[np.number]).columns
+# print(df_sessions_total_seconds[df_sts_numeric_cols].apply(zscore))
+
 df_sessions_no_nulls_action = df_sessions.dropna(subset=['action', 'action_type'])
 df_unique_devices = df_sessions.groupby('user_id').agg({'device_type': all_devices_per_id}).reset_index()
 df_actions = df_sessions_no_nulls_action.groupby('user_id').agg({'action': reduce_actions})
 df_action_types = df_sessions_no_nulls_action.groupby('user_id').agg({'action_type': reduce_actions})
+
