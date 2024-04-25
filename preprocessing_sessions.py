@@ -44,6 +44,11 @@ df_actions = df_sessions_no_nulls_action.groupby('user_id').agg({'action': [redu
 df_action_types = df_sessions_no_nulls_action.groupby('user_id').agg({'action_type': [reduce_actions, unique_actions, reduce_actions_len]})
 df_actions.columns = df_actions.columns.droplevel()
 
+# has to be x IN action NOT x == action because ending action\n != action
 def len_of_action_from_series(it, action):
-    f = filter(lambda x: x == action, it.split(';'))
+    vals = it.split(';')
+    f = filter(lambda x: x in action, vals)
+    # print(list(f))
     return len(list(f))
+
+df_actions.apply(len_of_action_from_series, args=("show",)).sum()

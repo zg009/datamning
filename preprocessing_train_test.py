@@ -10,7 +10,6 @@ df_train = pd.read_csv(TRAIN_USERS_LOC, parse_dates=['date_account_created', 'ti
 # print(df_train['language'].value_counts())
 # print(df_train['gender'].value_counts()) # this means have to encode not with greater but greater, less, or indifferent
 
-
 df_train['date_account_created_year'] = df_train.date_account_created.dt.year
 df_train['date_account_created_month'] = df_train.date_account_created.dt.month
 df_train['date_account_created_day'] = df_train.date_account_created.dt.day
@@ -48,7 +47,6 @@ age_buckets_mapping = {
     range(95, 100): "95-99",
     range(100, 130): "100+"
 }
-
 
 # maybe other solutions for age interpolation?
 # just drop for now
