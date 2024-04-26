@@ -7,7 +7,6 @@ df_countries = pd.read_csv(COUNTRIES_LOC)
 # print(df_countries.describe())
 # print(df_countries.head()) # might be something with lat long related to booking date? close-to-equator in winter vs far-from-equator in summer, also take into account southern vs northern hemisphere
 # print(df_countries.columns)
-# print(df_train.columns)
 
 
 # when summer in that hemisphere starts

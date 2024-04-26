@@ -1,4 +1,5 @@
 import pandas as pd
+from sklearn.preprocessing import OneHotEncoder
 TEST_USERS_LOC = './raw_data/test_users.csv'
 df_test = pd.read_csv(TEST_USERS_LOC, parse_dates=['date_account_created', 'timestamp_first_active', 'date_first_booking'])
 TRAIN_USERS_LOC = './raw_data/train_users_2.csv'
@@ -48,9 +49,32 @@ age_buckets_mapping = {
     range(100, 130): "100+"
 }
 
+def category_encode(features: pd.DataFrame):
+    cat_classes = features.select_dtypes(include=[object])
+    enc = OneHotEncoder(sparse_output=False).set_output(transform='pandas')
+    enc.fit(cat_classes)
+    encoded_cat_data = enc.fit_transform(cat_classes)
+    new_df = pd.DataFrame(encoded_cat_data, )
+    return new_df
+
 # maybe other solutions for age interpolation?
 # just drop for now
 df_train = df_train.dropna(subset=['age'])
 df_train['age'] = df_train.age.astype('Int32')
 df_train = df_train.query('age < 120') # probably should be over 16 and under 120
 df_train['age_bucket'] = df_train.age.apply(lambda x: next((v for k, v in age_buckets_mapping.items() if x in k), 0))
+
+# One hot encode some columns
+df_train.to_csv('train_with_extras.csv')
+# categorical columns
+categorical_columns = ['gender', 'signup_method', 'language', 'affiliate_channel', 'affiliate_provider', 'signup_app', 'first_device_type', 'first_browser', 'age_bucket', 'country_destination']
+cat_classes = df_train[categorical_columns]
+enc = OneHotEncoder(sparse_output=False).set_output(transform='pandas')
+enc.fit(cat_classes)
+encoded_cat_data = enc.fit_transform(cat_classes)
+df_train_encoded = pd.DataFrame(encoded_cat_data,)
+df_train_ohe = pd.concat([df_train, df_train_encoded], axis=1)
+df_train_ohe = df_train_ohe.drop(categorical_columns, axis=1)
+df_train_ohe.to_csv('train_ohe.csv')
+
+# do i need to drop all the date columns
