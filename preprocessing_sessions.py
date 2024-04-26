@@ -37,9 +37,10 @@ df_sessions_total_seconds['avg_time_per_session'] = df_sessions_total_seconds['s
 df_sts_numeric_cols = df_sessions_total_seconds.select_dtypes(include=[np.number]).columns
 # print(df_sessions_total_seconds[df_sts_numeric_cols].apply(zscore))
 
-df_sessions_no_nulls_action = df_sessions.dropna(subset=['action', 'action_type'])
-df_unique_devices = df_sessions.groupby('user_id').agg({'device_type': all_devices_per_id}).reset_index()
-# something wrong when building this
+df_sessions_no_nulls_action = df_sessions.dropna(subset=['action'])
+df_sessions_no_nulls_action_type = df_sessions.dropna(subset=['action_type'])
+
+df_unique_devices = df_sessions.groupby('user_id')['device_type'].apply(all_devices_per_id)
 df_actions = df_sessions_no_nulls_action.groupby('user_id').agg({'action': [reduce_actions, unique_actions, reduce_actions_len]})
 df_action_types = df_sessions_no_nulls_action.groupby('user_id').agg({'action_type': [reduce_actions, unique_actions, reduce_actions_len]})
 df_actions.columns = df_actions.columns.droplevel()
@@ -51,4 +52,12 @@ def len_of_action_from_series(it, action):
     # print(list(f))
     return len(list(f))
 
-df_actions.apply(len_of_action_from_series, args=("show",)).sum()
+# df_actions.reduce_actions.apply(len_of_action_from_series, args=("show",)).sum()
+action_frames = []
+actions_set = set(df_sessions_no_nulls_action.action.values)
+for action in actions_set:
+    action_frames.append(df_actions.reduce_actions.apply(len_of_action_from_series, args=(action,)))
+    
+action_frames.insert(0, df_actions)                    
+result = pd.concat(action_frames, axis=1)
+
