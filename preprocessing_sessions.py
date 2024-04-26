@@ -41,9 +41,12 @@ df_sessions_no_nulls_action = df_sessions.dropna(subset=['action'])
 df_sessions_no_nulls_action_type = df_sessions.dropna(subset=['action_type'])
 
 df_unique_devices = df_sessions.groupby('user_id')['device_type'].apply(all_devices_per_id)
+
 df_actions = df_sessions_no_nulls_action.groupby('user_id').agg({'action': [reduce_actions, unique_actions, reduce_actions_len]})
-df_action_types = df_sessions_no_nulls_action.groupby('user_id').agg({'action_type': [reduce_actions, unique_actions, reduce_actions_len]})
 df_actions.columns = df_actions.columns.droplevel()
+
+df_action_types = df_sessions_no_nulls_action_type.groupby('user_id').agg({'action_type': [reduce_actions, unique_actions, reduce_actions_len]})
+df_action_types.columns = df_action_types.columns.droplevel()
 
 # has to be x IN action NOT x == action because ending action\n != action
 def len_of_action_from_series(it, action):
@@ -57,7 +60,16 @@ action_frames = []
 actions_set = set(df_sessions_no_nulls_action.action.values)
 for action in actions_set:
     action_frames.append(df_actions.reduce_actions.apply(len_of_action_from_series, args=(action,)))
-    
-action_frames.insert(0, df_actions)                    
-result = pd.concat(action_frames, axis=1)
 
+
+action_frames.insert(0, df_actions)                    
+action_result = pd.concat(action_frames, axis=1)
+
+action_type_frames = []
+action_type_set = set(df_sessions_no_nulls_action_type.action_type.values)
+for action_type in action_type_set:
+    action_type_frames.append(df_action_types.reduce_actions.apply(len_of_action_from_series, args=(action_type,)))
+
+
+action_type_frames.insert(0, df_action_types)
+action_type_result = pd.concat(action_type_frames, axis=1)
