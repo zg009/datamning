@@ -15,4 +15,4 @@ df_age_gender_joined = df_age_gender_joined.loc[df_age_gender_joined['gender_y']
 df_age_gender_joined = df_age_gender_joined.drop(columns=['key_x', 'join_key', 'key_y'])
 df_age_gender_joined['male_pop_diff'] = df_age_gender_joined['population_in_thousands_y'] - df_age_gender_joined['population_in_thousands_x']
 df_age_gender_joined['more_male'] = np.where(df_age_gender_joined['male_pop_diff'] > 0, 1, 0)
-df_age_gender_joined.to_csv('age_gender_joined.csv')
+df_age_gender_joined.to_csv('age_gender_agg_data.csv')

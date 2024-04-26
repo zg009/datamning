@@ -26,4 +26,4 @@ def summer_end(x):
 # Let's do countries a bit
 df_countries['summer_start'] = df_countries['lat_destination'].apply(summer_start)
 df_countries['summer_end'] = df_countries['lat_destination'].apply(summer_end)
-df_countries.to_csv('countries_new.csv')
+df_countries.to_csv('countries_agg_data.csv')
