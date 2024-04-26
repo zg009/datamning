@@ -56,14 +56,15 @@ def len_of_action_from_series(it, action):
     return len(list(f))
 
 # df_actions.reduce_actions.apply(len_of_action_from_series, args=("show",)).sum()
-action_frames = []
+action_frames = {}
 actions_set = set(df_sessions_no_nulls_action.action.values)
 for action in actions_set:
-    action_frames.append(df_actions.reduce_actions.apply(len_of_action_from_series, args=(action,)))
+    action_frames[action] = df_actions.reduce_actions.apply(len_of_action_from_series, args=(action,)) 
+    # action_frames.append(df_actions.reduce_actions.apply(len_of_action_from_series, args=(action,)))
 
 
-action_frames.insert(0, df_actions)                    
-action_result = pd.concat(action_frames, axis=1)
+action_frames['main'] = df_actions                    
+action_result = pd.concat(action_frames.values(), axis=1)
 
 action_type_frames = []
 action_type_set = set(df_sessions_no_nulls_action_type.action_type.values)
@@ -73,3 +74,4 @@ for action_type in action_type_set:
 
 action_type_frames.insert(0, df_action_types)
 action_type_result = pd.concat(action_type_frames, axis=1)
+# df_sessions_total_seconds.merge(df_unique_devices, left_index=True, right_index=True).merge(action_type_result, left_index=True, right_index=True).columns
