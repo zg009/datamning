@@ -67,7 +67,7 @@ df_train['age_bucket'] = df_train.age.apply(lambda x: next((v for k, v in age_bu
 # One hot encode some columns
 df_train.to_csv('train_with_extras.csv')
 # categorical columns
-categorical_columns = ['gender', 'signup_method', 'language', 'affiliate_channel', 'affiliate_provider', 'signup_app', 'first_device_type', 'first_browser', 'age_bucket', 'country_destination']
+categorical_columns = ['gender', 'signup_flow', 'signup_method', 'language', 'affiliate_channel', 'affiliate_provider', 'signup_app', 'first_device_type', 'first_browser', 'age_bucket']
 cat_classes = df_train[categorical_columns]
 enc = OneHotEncoder(sparse_output=False).set_output(transform='pandas')
 enc.fit(cat_classes)
