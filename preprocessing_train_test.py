@@ -59,29 +59,28 @@ def category_encode(features: pd.DataFrame):
     new_df = pd.DataFrame(encoded_cat_data, )
     return new_df
 
+
 def encode_age(num):
     if num > 1900:
-        return 2015 - num
-    elif num < 16:
-        return None
-    else:
-        return num
+        return int(2015 - num)
+    return num
+
 
 def encode_age_range(num, a):
     if num < 16 or num > 120:
-        return a
+        return int(a)
     return num
+
 
 df_train['age'] = df_train.age.apply(encode_age)
 df_train['age'] = df_train.age.apply(encode_age_range, args=(df_train.age.mean(),))
-df_train['age'] = df_train.age.astype('Int32')
-df_train['age'] = df_train.age.fillna(df_train.age.mean())
+df_train['age'] = df_train.age.fillna(int(df_train.age.mean()))
 df_train['age_bucket'] = df_train.age.apply(lambda x: next((v for k, v in age_buckets_mapping.items() if x in k), 0))
 df_train['first_affiliate_tracked'] = df_train.first_affiliate_tracked.fillna('untracked')
 
 # One hot encode some columns
 # categorical columns
-categorical_columns = ['gender', 'signup_flow', 'signup_method', 'language', 'affiliate_channel', 'affiliate_provider', 'signup_app', 'first_device_type', 'first_browser', 'age_bucket']
+categorical_columns = ['gender', 'signup_method', 'signup_flow', 'language', 'affiliate_channel', 'affiliate_provider', 'signup_app', 'first_device_type', 'first_browser', 'age_bucket']
 cat_classes = df_train[categorical_columns]
 enc = OneHotEncoder(sparse_output=False).set_output(transform='pandas')
 enc.fit(cat_classes)
@@ -89,7 +88,7 @@ encoded_cat_data = enc.fit_transform(cat_classes)
 df_train_encoded = pd.DataFrame(encoded_cat_data,)
 df_train_ohe = pd.concat([df_train, df_train_encoded], axis=1)
 df_train_ohe = df_train_ohe.drop(categorical_columns, axis=1)
-df_train_ohe.to_csv('train_ohe.csv')
+# df_train_ohe.to_csv('train_ohe.csv')
 
 # load in other frames
 df_sessions = pd.read_csv('sessions_agg_data.csv')
