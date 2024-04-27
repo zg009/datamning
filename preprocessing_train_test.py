@@ -95,4 +95,8 @@ df_sessions = pd.read_csv('sessions_agg_data.csv')
 # df_countries = pd.read_csv('countries_agg_data.csv')
 # df_age_gender = pd.read_csv('age_gender_agg_data.csv')
 # df_age_gender['age_gender_key'] = df_age_gender['age_bucket'] + '_' + df_age_gender['country_destination']
+df_all = df_train_ohe.merge(df_sessions, left_on='id', right_on='user_id')
+df_all['avg_time_per_session'] = df_all.avg_time_per_session.fillna(0)
 
+# alright the preprocessing is finished
+df_all.to_csv('training_data.csv')

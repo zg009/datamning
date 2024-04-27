@@ -34,6 +34,7 @@ def unique_actions(series):
 # Let's get some aggregate statistics about the sessions
 df_sessions_total_seconds = df_sessions.groupby(['user_id'])['secs_elapsed'].agg(['count', 'sum'])
 df_sessions_total_seconds['avg_time_per_session'] = df_sessions_total_seconds['sum'] / df_sessions_total_seconds['count']
+df_sessions_total_seconds['avg_time_per_session'].fillna(0)
 df_sts_numeric_cols = df_sessions_total_seconds.select_dtypes(include=[np.number]).columns
 # print(df_sessions_total_seconds[df_sts_numeric_cols].apply(zscore))
 
