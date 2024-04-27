@@ -78,3 +78,14 @@ df_train_ohe = df_train_ohe.drop(categorical_columns, axis=1)
 df_train_ohe.to_csv('train_ohe.csv')
 
 # do i need to drop all the date columns
+df_train_ohe.drop(labels=['date_account_created', 'timestamp_first_active', 'date_first_booking'], axis=1, inplace=True)
+# first_affiliate has some nulls, just dropping it
+df_train_ohe.drop(labels=['first_affiliate_tracked'], axis=1, inplace=True)
+
+# drop these because null, is there any better way to handle them?
+df_train_ohe.drop(labels=['date_first_booking_day', 'date_first_booking_month', 'date_first_booking_year'], axis=1, inplace=True)
+
+# load in other frames
+df_sessions = pd.read_csv('sessions_agg_data.csv')
+df_countries = pd.read_csv('countries_agg_data.csv')
+df_age_gender = pd.read_csv('age_gender_agg_data.csv')
