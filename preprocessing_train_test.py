@@ -15,15 +15,17 @@ df_train['date_account_created_year'] = df_train.date_account_created.dt.year
 df_train['date_account_created_month'] = df_train.date_account_created.dt.month
 df_train['date_account_created_day'] = df_train.date_account_created.dt.day
 
-df_train['date_first_booking_year'] = df_train.date_first_booking.dt.year.astype('Int32')
-df_train['date_first_booking_month'] = df_train.date_first_booking.dt.month.astype('Int32')
-df_train['date_first_booking_day'] = df_train.date_first_booking.dt.day.astype('Int32')
+# df_train['date_first_booking_year'] = df_train.date_first_booking.dt.year.astype('Int32')
+# df_train['date_first_booking_month'] = df_train.date_first_booking.dt.month.astype('Int32')
+# df_train['date_first_booking_day'] = df_train.date_first_booking.dt.day.astype('Int32')
 
 df_train['date_timestamp_first_active_year'] = df_train.timestamp_first_active.dt.year.astype('Int32')
 df_train['date_timestamp_first_active_month'] = df_train.timestamp_first_active.dt.month.astype('Int32')
 df_train['date_timestamp_first_active_day'] = df_train.timestamp_first_active.dt.day.astype('Int32')
+df_train.drop(['timestamp_first_active', 'date_first_booking', 'date_account_created'], axis=1, inplace=True)
 
 df_train['age'] = df_train.age.astype('Int32')
+df_train['gender'] = df_train.gender.str.lower()
 
 age_buckets_mapping = {
     range(0, 5): "0-4",
@@ -57,15 +59,27 @@ def category_encode(features: pd.DataFrame):
     new_df = pd.DataFrame(encoded_cat_data, )
     return new_df
 
-# maybe other solutions for age interpolation?
-# just drop for now
-df_train = df_train.dropna(subset=['age'])
+def encode_age(num):
+    if num > 1900:
+        return 2015 - num
+    elif num < 16:
+        return None
+    else:
+        return num
+
+def encode_age_range(num, a):
+    if num < 16 or num > 120:
+        return a
+    return num
+
+df_train['age'] = df_train.age.apply(encode_age)
+df_train['age'] = df_train.age.apply(encode_age_range, args=(df_train.age.mean(),))
 df_train['age'] = df_train.age.astype('Int32')
-df_train = df_train.query('age < 120') # probably should be over 16 and under 120
+df_train['age'] = df_train.age.fillna(df_train.age.mean())
 df_train['age_bucket'] = df_train.age.apply(lambda x: next((v for k, v in age_buckets_mapping.items() if x in k), 0))
+df_train['first_affiliate_tracked'] = df_train.first_affiliate_tracked.fillna('untracked')
 
 # One hot encode some columns
-df_train.to_csv('train_with_extras.csv')
 # categorical columns
 categorical_columns = ['gender', 'signup_flow', 'signup_method', 'language', 'affiliate_channel', 'affiliate_provider', 'signup_app', 'first_device_type', 'first_browser', 'age_bucket']
 cat_classes = df_train[categorical_columns]
@@ -77,15 +91,9 @@ df_train_ohe = pd.concat([df_train, df_train_encoded], axis=1)
 df_train_ohe = df_train_ohe.drop(categorical_columns, axis=1)
 df_train_ohe.to_csv('train_ohe.csv')
 
-# do i need to drop all the date columns
-df_train_ohe.drop(labels=['date_account_created', 'timestamp_first_active', 'date_first_booking'], axis=1, inplace=True)
-# first_affiliate has some nulls, just dropping it
-df_train_ohe.drop(labels=['first_affiliate_tracked'], axis=1, inplace=True)
-
-# drop these because null, is there any better way to handle them?
-df_train_ohe.drop(labels=['date_first_booking_day', 'date_first_booking_month', 'date_first_booking_year'], axis=1, inplace=True)
-
 # load in other frames
 df_sessions = pd.read_csv('sessions_agg_data.csv')
-df_countries = pd.read_csv('countries_agg_data.csv')
-df_age_gender = pd.read_csv('age_gender_agg_data.csv')
+# df_countries = pd.read_csv('countries_agg_data.csv')
+# df_age_gender = pd.read_csv('age_gender_agg_data.csv')
+# df_age_gender['age_gender_key'] = df_age_gender['age_bucket'] + '_' + df_age_gender['country_destination']
+
