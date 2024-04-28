@@ -101,3 +101,22 @@ df_all['avg_time_per_session'] = df_all.avg_time_per_session.fillna(0)
 
 # alright the preprocessing is finished
 df_all.to_csv('training_data.csv')
+
+### SANITY CHECK
+# deep = df_sessions.user_id.copy()
+# df_session_test = pd.DataFrame()
+# df_session_test['user_id'] = deep
+# df_session_test['user_id_clone'] = deep
+
+# deep2 = df_train_ohe.id.copy()
+# df_train_ohe_test = pd.DataFrame()
+# df_train_ohe_test['user_id'] = deep2
+# df_train_ohe_test['user_id_clone'] = deep2
+
+# df_match_session = df_session_test.merge(df_train_ohe_test,how='left', on='user_id')
+# df_match_ohe = df_train_ohe_test.merge(df_session_test,how='left', on='user_id')
+# df_match_session.to_csv('id_join_left_on_session_ids.csv')
+# df_match_ohe.to_csv('id_join_left_on_training_ids.csv')
+
+# df_match_ohe.isna().value_counts()
+# df_match_session.isna().value_counts()
