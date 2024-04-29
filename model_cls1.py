@@ -25,7 +25,7 @@ p_grid = {
     'max_iter': [1500, 2000, 2500]
 }
 
-svc = LinearSVC(dual=False)
+svc = LinearSVC(dual=True, tol=1e-3)
 NUM_TRIALS = 6
 non_nested_scores = np.zeros(NUM_TRIALS)
 nested_scores = np.zeros(NUM_TRIALS)
