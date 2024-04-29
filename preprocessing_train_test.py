@@ -112,6 +112,9 @@ df_left['avg_time_per_session'] = df_left.avg_time_per_session.fillna(0)
 
 # alright the preprocessing is finished
 df_all.to_csv('training_data.csv')
+# added these
+df_left = df_left.drop(['user_id'], axis=1)
+df_left = df_left.fillna(0.0)
 df_left.to_csv('sparse_training_data.csv')
 
 ### SANITY CHECK
