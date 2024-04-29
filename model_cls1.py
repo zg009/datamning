@@ -1,5 +1,4 @@
 import pandas as pd
-from sklearn.tree import DecisionTreeClassifier
 
 TRAINING_DATA = './training_data.csv'
 df = pd.read_csv(TRAINING_DATA, index_col='id')
