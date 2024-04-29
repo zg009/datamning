@@ -72,11 +72,17 @@ def encode_age_range(num, a):
     return num
 
 
+def booked(v):
+    if 'NDF' in v:
+        return False
+    return True
+
 df_train['age'] = df_train.age.apply(encode_age)
 df_train['age'] = df_train.age.apply(encode_age_range, args=(df_train.age.mean(),))
 df_train['age'] = df_train.age.fillna(int(df_train.age.mean()))
 df_train['age_bucket'] = df_train.age.apply(lambda x: next((v for k, v in age_buckets_mapping.items() if x in k), 0))
 df_train['first_affiliate_tracked'] = df_train.first_affiliate_tracked.fillna('untracked')
+df_train['booked'] = df_train.country_destination.apply(booked)
 
 # One hot encode some columns
 # categorical columns
@@ -96,11 +102,17 @@ df_sessions = pd.read_csv('sessions_agg_data.csv')
 # df_age_gender = pd.read_csv('age_gender_agg_data.csv')
 # df_age_gender['age_gender_key'] = df_age_gender['age_bucket'] + '_' + df_age_gender['country_destination']
 df_all = df_train_ohe.merge(df_sessions, left_on='id', right_on='user_id')
+
+df_left = df_train_ohe.merge(df_sessions, how='left', left_on='id', right_on='user_id')
+
 # this is just for me since i did not want to rerun the sessions generating code
 df_all['avg_time_per_session'] = df_all.avg_time_per_session.fillna(0)
+df_left['avg_time_per_session'] = df_left.avg_time_per_session.fillna(0)
+
 
 # alright the preprocessing is finished
 df_all.to_csv('training_data.csv')
+df_left.to_csv('sparse_training_data.csv')
 
 ### SANITY CHECK
 # deep = df_sessions.user_id.copy()
