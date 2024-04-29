@@ -86,7 +86,7 @@ df_train['booked'] = df_train.country_destination.apply(booked)
 
 # One hot encode some columns
 # categorical columns
-categorical_columns = ['gender', 'signup_method', 'signup_flow', 'language', 'affiliate_channel', 'affiliate_provider', 'signup_app', 'first_device_type', 'first_browser', 'age_bucket']
+categorical_columns = ['gender', 'first_affiliate_tracked', 'signup_method', 'signup_flow', 'language', 'affiliate_channel', 'affiliate_provider', 'signup_app', 'first_device_type', 'first_browser', 'age_bucket']
 cat_classes = df_train[categorical_columns]
 enc = OneHotEncoder(sparse_output=False).set_output(transform='pandas')
 enc.fit(cat_classes)
