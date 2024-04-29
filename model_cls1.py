@@ -13,24 +13,27 @@ LEFT_TRAINING_DATA = './sparse_training_data.csv'
 sparse = pd.read_csv(LEFT_TRAINING_DATA, index_col='id')
 sparse = sparse.drop(sparse.columns[[0]], axis=1)
 # with sparse, only 170 columns have no nulls for NDF
-sparse_X = sparse.drop(['id', 'country_destination', 'booked'], axis=1)
+sparse_X = sparse.drop(['country_destination', 'booked'], axis=1)
 sparse_binary_y = sparse.booked
 sparse_mc_y = sparse.country_destination
 X_train, X_test, y_train, y_test = train_test_split(sparse_X, sparse_binary_y, test_size=0.3, random_state=42)
 
 p_grid = {
-    'C': [1, 10, 100]
+    'penalty': ['l1', 'l2'],
+    'loss': ['hinge', 'squared_hinge'],
+    'C': [1, 10, 100],
+    'max_iter': [1500, 2000, 2500]
 }
 
-svc = LinearSVC(dual=False, tol=1e-3, max_iter=2000)
-NUM_TRIALS=5
-
+svc = LinearSVC(dual=False)
+NUM_TRIALS = 6
 non_nested_scores = np.zeros(NUM_TRIALS)
 nested_scores = np.zeros(NUM_TRIALS)
 
 for i in range(NUM_TRIALS):
-    inner_cv = GroupKFold(n_splits=3)
-    outer_cv = KFold()
+    print('training... loop {}', i)
+    inner_cv = KFold(n_splits=4, shuffle=True, random_state=i)
+    outer_cv = KFold(n_splits=4, shuffle=True, random_state=i)
     
     clf = GridSearchCV(estimator=svc, cv=outer_cv, param_grid=p_grid)
     clf.fit(X_train, y_train)
