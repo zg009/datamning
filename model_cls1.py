@@ -31,7 +31,7 @@ non_nested_scores = np.zeros(NUM_TRIALS)
 nested_scores = np.zeros(NUM_TRIALS)
 
 for i in range(NUM_TRIALS):
-    print('training... loop {}', i)
+    print('training... loop', i)
     inner_cv = KFold(n_splits=4, shuffle=True, random_state=i)
     outer_cv = KFold(n_splits=4, shuffle=True, random_state=i)
     
