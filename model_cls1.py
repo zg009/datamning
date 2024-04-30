@@ -3,6 +3,8 @@ import numpy as np
 from sklearn.model_selection import train_test_split, cross_val_score, GroupKFold, KFold, GridSearchCV
 
 from sklearn.svm import SVC, LinearSVC
+from sklearn.multiclass import OneVsRestClassifier, OneVsOneClassifier
+from sklearn.metrics import accuracy_score
 # TRAINING_DATA = './training_data.csv'
 # df = pd.read_csv(TRAINING_DATA, index_col='id')
 # df = df.drop(df.columns[[0]], axis=1)
@@ -18,32 +20,34 @@ sparse_binary_y = sparse.booked
 sparse_mc_y = sparse.country_destination
 X_train, X_test, y_train, y_test = train_test_split(sparse_X, sparse_binary_y, test_size=0.3, random_state=42)
 
-p_grid = {
-    'penalty': ['l1', 'l2'],
-    # 'C': [1, 10, 100]
-}
+# LEFT_TESTING_DATA = './sparse_testing_data.csv'
+# testing = pd.read_csv(LEFT_TESTING_DATA, index_col='id')
+# testing_X = testing.drop(testing.columns[[0]], axis=1)
 
-svc = LinearSVC(dual=False, max_iter=3000)
-# NUM_TRIALS = 6
-# non_nested_scores = np.zeros(NUM_TRIALS)
-# nested_scores = np.zeros(NUM_TRIALS)
+# p_grid = {
+#     'penalty': ['l1', 'l2'],
+#     # 'C': [1, 10, 100]
+# }
 
-# for i in range(NUM_TRIALS):
-# print('training... loop', i)
-inner_cv = KFold(n_splits=4, shuffle=True)
-outer_cv = KFold(n_splits=4, shuffle=True)
+# svc = LinearSVC(dual=False, max_iter=3000)
 
-clf = GridSearchCV(estimator=svc, cv=outer_cv, param_grid=p_grid)
-clf.fit(X_train, y_train)
-# non_nested_scores[i] = clf.best_score_
-print(clf.best_score_)
+# inner_cv = KFold(n_splits=4, shuffle=True)
+# outer_cv = KFold(n_splits=4, shuffle=True)
 
-clf = GridSearchCV(estimator=svc, param_grid=p_grid, cv=inner_cv)
-nested_score = cross_val_score(clf, X=X_train, y=y_train, cv=outer_cv)
-print(nested_score)
-# nested_scores[i] = nested_score.mean()
+# clf = GridSearchCV(estimator=svc, cv=outer_cv, param_grid=p_grid)
+# clf.fit(sparse_X, sparse_binary_y)
+# print(clf.best_score_)
 
+#  this seems better
+# clf = GridSearchCV(estimator=svc, param_grid=p_grid, cv=inner_cv)
+# nested_score = cross_val_score(clf, X=sparse_X, y=sparse_binary_y, cv=outer_cv)
+# print(nested_score)
 
-# score_difference = non_nested_scores - nested_scores
-
-# print("Avg diff of {:6f} with std dev of {:6f}.".format(score_difference.mean(), score_difference.std()))
+X_train, X_test, y_train, y_test = train_test_split(sparse_X, sparse_mc_y, test_size=0.3, random_state=42)
+model = SVC()
+ovo = OneVsOneClassifier(model)
+# print(X_train.shape, X_test.shape)
+ovo.fit(X_train, y_train)
+y_hat = ovo.predict(X_test)
+score = accuracy_score(y_hat, y_test)
+print('SVC score', score)
