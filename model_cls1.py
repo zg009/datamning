@@ -1,3 +1,4 @@
+import multiprocessing
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split, cross_val_score, GroupKFold, KFold, GridSearchCV
@@ -5,6 +6,9 @@ from sklearn.model_selection import train_test_split, cross_val_score, GroupKFol
 from sklearn.svm import SVC, LinearSVC
 from sklearn.multiclass import OneVsRestClassifier, OneVsOneClassifier
 from sklearn.metrics import accuracy_score
+import time
+
+from imblearn.combine import SMOTEEN
 # TRAINING_DATA = './training_data.csv'
 # df = pd.read_csv(TRAINING_DATA, index_col='id')
 # df = df.drop(df.columns[[0]], axis=1)
@@ -42,12 +46,28 @@ X_train, X_test, y_train, y_test = train_test_split(sparse_X, sparse_binary_y, t
 # clf = GridSearchCV(estimator=svc, param_grid=p_grid, cv=inner_cv)
 # nested_score = cross_val_score(clf, X=sparse_X, y=sparse_binary_y, cv=outer_cv)
 # print(nested_score)
-
-X_train, X_test, y_train, y_test = train_test_split(sparse_X, sparse_mc_y, test_size=0.3, random_state=42)
-model = SVC()
-ovo = OneVsOneClassifier(model)
+# print(cpu_count())
+param_grid = {
+    'C': [0.1, 1, 10],
+    'penalty': ['l1', 'l2'],
+    'max_iter': [1500, 2000, 2500, 3000]
+}
+X_train, X_test, y_train, y_test = train_test_split(sparse_X, sparse_binary_y, test_size=0.3, random_state=42)
+start_time = time.time()
+model = LinearSVC(dual=False)
+clf = GridSearchCV(model, param_grid, n_jobs=multiprocessing.cpu_count() - 2, verbose=2)
+clf.fit(X_train, y_train)
+decisions = clf.decision_function(X_train)
+print(decisions)
+# print(clf.cv_results_)
+print(clf.best_estimator_)
+print(clf.best_score_)
+print(clf.best_params_)
+# print(int(cpu_count()) - 2) # type: ignore
+# ovo = OneVsRestClassifier(model, n_jobs=int(cpu_count()) - 2) # type: ignore
 # print(X_train.shape, X_test.shape)
-ovo.fit(X_train, y_train)
-y_hat = ovo.predict(X_test)
-score = accuracy_score(y_hat, y_test)
-print('SVC score', score)
+# model.fit(X_train, y_train)
+# y_hat = model.predict(X_test)
+# score = accuracy_score(y_hat, y_test)
+# print('SVC score', score)
+# print("--- %s seconds ---" % (time.time() - start_time))
