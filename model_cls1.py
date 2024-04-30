@@ -20,31 +20,30 @@ X_train, X_test, y_train, y_test = train_test_split(sparse_X, sparse_binary_y, t
 
 p_grid = {
     'penalty': ['l1', 'l2'],
-    'loss': ['hinge', 'squared_hinge'],
-    'C': [1, 10, 100],
-    'max_iter': [1500, 2000, 2500]
+    # 'C': [1, 10, 100]
 }
 
-svc = LinearSVC(dual=True, tol=1e-3)
-NUM_TRIALS = 6
-non_nested_scores = np.zeros(NUM_TRIALS)
-nested_scores = np.zeros(NUM_TRIALS)
+svc = LinearSVC(dual=False, max_iter=3000)
+# NUM_TRIALS = 6
+# non_nested_scores = np.zeros(NUM_TRIALS)
+# nested_scores = np.zeros(NUM_TRIALS)
 
-for i in range(NUM_TRIALS):
-    print('training... loop', i)
-    inner_cv = KFold(n_splits=4, shuffle=True, random_state=i)
-    outer_cv = KFold(n_splits=4, shuffle=True, random_state=i)
-    
-    clf = GridSearchCV(estimator=svc, cv=outer_cv, param_grid=p_grid)
-    clf.fit(X_train, y_train)
-    non_nested_scores[i] = clf.best_score_
-    
-    clf = GridSearchCV(estimator=svc, param_grid=p_grid, cv=inner_cv)
-    nested_score = cross_val_score(clf, X=X_train, y=y_train, cv=outer_cv)
-    
-    nested_scores[i] = nested_score.mean()
+# for i in range(NUM_TRIALS):
+# print('training... loop', i)
+inner_cv = KFold(n_splits=4, shuffle=True)
+outer_cv = KFold(n_splits=4, shuffle=True)
+
+clf = GridSearchCV(estimator=svc, cv=outer_cv, param_grid=p_grid)
+clf.fit(X_train, y_train)
+# non_nested_scores[i] = clf.best_score_
+print(clf.best_score_)
+
+clf = GridSearchCV(estimator=svc, param_grid=p_grid, cv=inner_cv)
+nested_score = cross_val_score(clf, X=X_train, y=y_train, cv=outer_cv)
+print(nested_score)
+# nested_scores[i] = nested_score.mean()
 
 
-score_difference = non_nested_scores - nested_scores
+# score_difference = non_nested_scores - nested_scores
 
-print("Avg diff of {:6f} with std dev of {:6f}.".format(score_difference.mean(), score_difference.std()))
+# print("Avg diff of {:6f} with std dev of {:6f}.".format(score_difference.mean(), score_difference.std()))
