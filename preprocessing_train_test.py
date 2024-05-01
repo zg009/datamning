@@ -1,9 +1,9 @@
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
+
 TEST_USERS_LOC = './raw_data/test_users.csv'
-df_test = pd.read_csv(TEST_USERS_LOC, parse_dates=['date_account_created', 'timestamp_first_active', 'date_first_booking'])
 TRAIN_USERS_LOC = './raw_data/train_users_2.csv'
-df_train = pd.read_csv(TRAIN_USERS_LOC, parse_dates=['date_account_created', 'timestamp_first_active', 'date_first_booking'])
+
 
 age_buckets_mapping = {
     range(0, 5): "0-4",
@@ -55,148 +55,92 @@ def booked(v):
         return False
     return True
 
-# Let's inspect the test data for inconsistencies
-# print(df_train['age'].value_counts()) # stuff is fucked up here
-# print(df_train['country_destination'].value_counts())
-# print(df_train['language'].value_counts())
-# print(df_train['gender'].value_counts()) # this means have to encode not with greater but greater, less, or indifferent
+### Function that does preprocessing for both train and test datasets
+# type = test or train
+def preprocessing_airbnb(df, type):
+    df_copy = df
 
-df_train['date_account_created_year'] = df_train.date_account_created.dt.year
-df_train['date_account_created_month'] = df_train.date_account_created.dt.month
-df_train['date_account_created_day'] = df_train.date_account_created.dt.day
+    ### Split date of account created into three seperate columns for training set
+    df_copy['date_account_created_year'] = df_copy.date_account_created.dt.year
+    df_copy['date_account_created_month'] = df_copy.date_account_created.dt.month
+    df_copy['date_account_created_day'] = df_copy.date_account_created.dt.day
 
-df_test['date_account_created_year'] = df_test.date_account_created.dt.year
-df_test['date_account_created_month'] = df_test.date_account_created.dt.month
-df_test['date_account_created_day'] = df_test.date_account_created.dt.day
+    ### Split date timestamp of first active into three seperate columns
+    df_copy['date_timestamp_first_active_year'] = df_copy.timestamp_first_active.dt.year.astype('Int32')
+    df_copy['date_timestamp_first_active_month'] = df_copy.timestamp_first_active.dt.month.astype('Int32')
+    df_copy['date_timestamp_first_active_day'] = df_copy.timestamp_first_active.dt.day.astype('Int32')
 
-# df_train['date_first_booking_year'] = df_train.date_first_booking.dt.year.astype('Int32')
-# df_train['date_first_booking_month'] = df_train.date_first_booking.dt.month.astype('Int32')
-# df_train['date_first_booking_day'] = df_train.date_first_booking.dt.day.astype('Int32')
+    ### Drop original variables that were split
+    df_copy.drop(['timestamp_first_active', 'date_first_booking', 'date_account_created'], axis=1, inplace=True)
 
-df_train['date_timestamp_first_active_year'] = df_train.timestamp_first_active.dt.year.astype('Int32')
-df_train['date_timestamp_first_active_month'] = df_train.timestamp_first_active.dt.month.astype('Int32')
-df_train['date_timestamp_first_active_day'] = df_train.timestamp_first_active.dt.day.astype('Int32')
-df_train.drop(['timestamp_first_active', 'date_first_booking', 'date_account_created'], axis=1, inplace=True)
+    ### Age to int and gender to all lowercase
+    df_copy['age'] = df_copy.age.astype('Int32')
+    df_copy['gender'] = df_copy.gender.str.lower()
 
-df_train['age'] = df_train.age.astype('Int32')
-df_train['gender'] = df_train.gender.str.lower()
+    ### Subtract age where weird people put in their birth year
+    df_copy['age'] = df_copy.age.apply(encode_age)
 
-df_train['age'] = df_train.age.apply(encode_age)
-df_train['age'] = df_train.age.apply(encode_age_range, args=(df_train.age.mean(),))
-df_train['age'] = df_train.age.fillna(int(df_train.age.mean()))
-df_train['age_bucket'] = df_train.age.apply(lambda x: next((v for k, v in age_buckets_mapping.items() if x in k), 0))
-df_train['first_affiliate_tracked'] = df_train.first_affiliate_tracked.fillna('untracked')
-df_train['booked'] = df_train.country_destination.apply(booked)
+    ### Encode age if beyond weird age rage (below 16 or above 120)
+    df_copy['age'] = df_copy.age.apply(encode_age_range, args=(df_train.age.mean(),))
 
-# One hot encode some columns
-# categorical columns
-categorical_columns = ['gender', 'first_affiliate_tracked', 'signup_method', 'signup_flow', 'language', 'affiliate_channel', 'affiliate_provider', 'signup_app', 'first_device_type', 'first_browser', 'age_bucket']
-cat_classes = df_train[categorical_columns]
-enc = OneHotEncoder(sparse_output=False).set_output(transform='pandas')
-enc.fit(cat_classes)
-encoded_cat_data = enc.fit_transform(cat_classes)
-df_train_encoded = pd.DataFrame(encoded_cat_data,)
-df_train_ohe = pd.concat([df_train, df_train_encoded], axis=1)
-df_train_ohe = df_train_ohe.drop(categorical_columns, axis=1)
-# df_train_ohe.to_csv('train_ohe.csv')
+    ### Give mean to ages where NA
+    df_copy['age'] = df_copy.age.fillna(int(df_copy.age.mean()))
 
-# load in other frames
-df_sessions = pd.read_csv('sessions_agg_data.csv')
-# df_countries = pd.read_csv('countries_agg_data.csv')
-# df_age_gender = pd.read_csv('age_gender_agg_data.csv')
-# df_age_gender['age_gender_key'] = df_age_gender['age_bucket'] + '_' + df_age_gender['country_destination']
-df_all = df_train_ohe.merge(df_sessions, left_on='id', right_on='user_id')
+    df_copy['age_bucket'] = df_copy.age.apply(lambda x: next((v for k, v in age_buckets_mapping.items() if x in k), 0))
+    df_copy['first_affiliate_tracked'] = df_copy.first_affiliate_tracked.fillna('untracked')
+    
+    if type == 'train':
+        #Give boolean if books or NDF
+        df_copy['booked'] = df_copy.country_destination.apply(booked)
 
-df_left = df_train_ohe.merge(df_sessions, how='left', left_on='id', right_on='user_id')
+    ### One Hot Encoder on category classes
+    categorical_columns = ['gender', 'first_affiliate_tracked', 'signup_method', 'signup_flow', 'language', 'affiliate_channel', 'affiliate_provider', 'signup_app', 'first_device_type', 'first_browser', 'age_bucket']
+    cat_classes = df_copy[categorical_columns]
+    enc = OneHotEncoder(sparse_output=False).set_output(transform='pandas')
+    enc.fit(cat_classes)
+    encoded_cat_data = enc.fit_transform(cat_classes)
+    df_encoded = pd.DataFrame(encoded_cat_data,)
 
-# this is just for me since i did not want to rerun the sessions generating code
-df_all['avg_time_per_session'] = df_all.avg_time_per_session.fillna(0)
-df_left['avg_time_per_session'] = df_left.avg_time_per_session.fillna(0)
+    # Combine new encoded columns with original train set
+    df_comb = pd.concat([df_copy, df_encoded], axis=1)
+    # Drop all categorial columns
+    df_comb = df_comb.drop(categorical_columns, axis=1)
 
+    ### load in other frames
+    df_sessions = pd.read_csv('sessions_agg_data.csv')
+    # df_countries = pd.read_csv('countries_agg_data.csv')
+    # df_age_gender = pd.read_csv('age_gender_agg_data.csv')
+    # df_age_gender['age_gender_key'] = df_age_gender['age_bucket'] + '_' + df_age_gender['country_destination']
+    df_all = df_comb.merge(df_sessions, left_on='id', right_on='user_id')
 
-# alright the preprocessing is finished
-df_all.to_csv('training_data.csv')
-# added these
-df_left = df_left.drop(['user_id'], axis=1)
-df_left = df_left.fillna(0.0)
-df_left.to_csv('sparse_training_data.csv')
+    df_left = df_comb.merge(df_sessions, how='left', left_on='id', right_on='user_id')
 
-### SANITY CHECK
-# deep = df_sessions.user_id.copy()
-# df_session_test = pd.DataFrame()
-# df_session_test['user_id'] = deep
-# df_session_test['user_id_clone'] = deep
+    # this is just for me since i did not want to rerun the sessions generating code
+    df_all['avg_time_per_session'] = df_all.avg_time_per_session.fillna(0)
+    df_left['avg_time_per_session'] = df_left.avg_time_per_session.fillna(0)
 
-# deep2 = df_train_ohe.id.copy()
-# df_train_ohe_test = pd.DataFrame()
-# df_train_ohe_test['user_id'] = deep2
-# df_train_ohe_test['user_id_clone'] = deep2
+    if type == 'train':
+        # alright the preprocessing is finished
+        df_all.to_csv('training_data.csv')
+        # added these
+        df_left = df_left.drop(['user_id'], axis=1)
+        df_left = df_left.fillna(0.0)
+        df_left.to_csv('sparse_training_data.csv')
 
-# df_match_session = df_session_test.merge(df_train_ohe_test,how='left', on='user_id')
-# df_match_ohe = df_train_ohe_test.merge(df_session_test,how='left', on='user_id')
-# df_match_session.to_csv('id_join_left_on_session_ids.csv')
-# df_match_ohe.to_csv('id_join_left_on_training_ids.csv')
+    if type == 'test':
+        # alright the preprocessing is finished
+        df_all.to_csv('testing_data.csv')
+        # added these
+        df_left = df_left.drop(['user_id'], axis=1)
+        df_left = df_left.fillna(0.0)
+        df_left.to_csv('sparse_testing_data.csv')
 
-# df_match_ohe.isna().value_counts()
-# df_match_session.isna().value_counts()
+    print(df_all.describe())
+    
+    return df_all
 
-# Let's inspect the test data for inconsistencies
-# print(df_test['age'].value_counts()) # stuff is fucked up here
-# print(df_test['country_destination'].value_counts())
-# print(df_test['language'].value_counts())
-# print(df_test['gender'].value_counts()) # this means have to encode not with greater but greater, less, or indifferent
+df_train = pd.read_csv(TRAIN_USERS_LOC, parse_dates=['date_account_created', 'timestamp_first_active', 'date_first_booking'])
+df_test = pd.read_csv(TEST_USERS_LOC, parse_dates=['date_account_created', 'timestamp_first_active', 'date_first_booking'])
 
-df_test['date_account_created_year'] = df_test.date_account_created.dt.year
-df_test['date_account_created_month'] = df_test.date_account_created.dt.month
-df_test['date_account_created_day'] = df_test.date_account_created.dt.day
-
-df_test['date_account_created_year'] = df_test.date_account_created.dt.year
-df_test['date_account_created_month'] = df_test.date_account_created.dt.month
-df_test['date_account_created_day'] = df_test.date_account_created.dt.day
-
-# df_test['date_first_booking_year'] = df_test.date_first_booking.dt.year.astype('Int32')
-# df_test['date_first_booking_month'] = df_test.date_first_booking.dt.month.astype('Int32')
-# df_test['date_first_booking_day'] = df_test.date_first_booking.dt.day.astype('Int32')
-
-df_test['date_timestamp_first_active_year'] = df_test.timestamp_first_active.dt.year.astype('Int32')
-df_test['date_timestamp_first_active_month'] = df_test.timestamp_first_active.dt.month.astype('Int32')
-df_test['date_timestamp_first_active_day'] = df_test.timestamp_first_active.dt.day.astype('Int32')
-df_test.drop(['timestamp_first_active', 'date_first_booking', 'date_account_created'], axis=1, inplace=True)
-
-df_test['age'] = df_test.age.astype('Int32')
-df_test['gender'] = df_test.gender.str.lower()
-
-df_test['age'] = df_test.age.apply(encode_age)
-df_test['age'] = df_test.age.apply(encode_age_range, args=(df_test.age.mean(),))
-df_test['age'] = df_test.age.fillna(int(df_test.age.mean()))
-df_test['age_bucket'] = df_test.age.apply(lambda x: next((v for k, v in age_buckets_mapping.items() if x in k), 0))
-df_test['first_affiliate_tracked'] = df_test.first_affiliate_tracked.fillna('untracked')
-# df_test['booked'] = df_test.country_destination.apply(booked)
-
-# One hot encode some columns
-# categorical columns
-categorical_columns = ['gender', 'first_affiliate_tracked', 'signup_method', 'signup_flow', 'language', 'affiliate_channel', 'affiliate_provider', 'signup_app', 'first_device_type', 'first_browser', 'age_bucket']
-cat_classes = df_test[categorical_columns]
-enc = OneHotEncoder(sparse_output=False).set_output(transform='pandas')
-enc.fit(cat_classes)
-encoded_cat_data = enc.fit_transform(cat_classes)
-df_test_encoded = pd.DataFrame(encoded_cat_data,)
-df_test_ohe = pd.concat([df_test, df_test_encoded], axis=1)
-df_test_ohe = df_test_ohe.drop(categorical_columns, axis=1)
-# df_test_ohe.to_csv('test_ohe.csv')
-
-df_all = df_test_ohe.merge(df_sessions, left_on='id', right_on='user_id')
-
-df_left = df_test_ohe.merge(df_sessions, how='left', left_on='id', right_on='user_id')
-
-# this is just for me since i did not want to rerun the sessions generating code
-df_all['avg_time_per_session'] = df_all.avg_time_per_session.fillna(0)
-df_left['avg_time_per_session'] = df_left.avg_time_per_session.fillna(0)
-
-
-# alright the preprocessing is finished
-df_all.to_csv('testing_data.csv')
-# added these
-df_left = df_left.drop(['user_id'], axis=1)
-df_left = df_left.fillna(0.0)
-df_left.to_csv('sparse_testing_data.csv')
+preprocessing_airbnb(df_train, 'train')
+preprocessing_airbnb(df_test, 'test')
