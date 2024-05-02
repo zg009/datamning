@@ -49,9 +49,10 @@ print(collections.Counter(test_df.columns.tolist()) == collections.Counter(train
 knn = load('knn-classifier.joblib')
 
 test_df = test_df[knn.feature_names_in_.tolist()]
-test_df = test_df.reset_index() 
-print(test_df['id'])
-y_pred = knn.predict_proba(test_df[:10])
+# test_df = test_df.reset_index() 
+print(test_df)
+# print(test_df['id'])
+y_pred = knn.predict_proba(test_df)
 print(y_pred)
 
 sparse_mc_y = training_df.country_destination
@@ -61,11 +62,17 @@ label_encoder = LabelEncoder()
 encoded_y = label_encoder.fit_transform(sparse_mc_y)
 
 prediction=[]
-idea = test_df.id
-for i in range(10):
-     prediction.append(label_encoder.inverse_transform(np.argsort(y_pred[i])[::-1])[:5].tolist())  
+final_prediction = []
+test_df = test_df.reset_index() 
+idea = test_df['id']
+print("doing id size: ", idea.size)
+for i in range(idea.size):
+    prediction.append(label_encoder.inverse_transform(np.argsort(y_pred[i])[::-1])[:5].tolist())  
+    final_prediction.append(prediction[i][0])
     #  id.append(test_df['id'])
 
-pf = pd.DataFrame({'id': idea[:10], 'prediction': prediction})
+pf = pd.DataFrame({'id': idea, 'country': final_prediction})
 pf.describe()
 print(pf)
+file_name = 'k-neighbor-smoteenn-predictions.csv'
+pf.to_csv(file_name, index=False)
